@@ -24,7 +24,20 @@ class CoopOAuthController extends BaseController
      */
     public function redirectToAuthorization(Request $request)
     {
-        die('Implement this in CoopOAuthController::redirectToAuthorization');
+        $redirectUri = $this->generateUrl(
+            'coop_authorize_redirect',
+            array(),
+            true
+        );
+
+        $url = 'http://coop.apps.knpuniversity.com/authorize?'.http_build_query(array(
+                'response_type' => 'code',
+                'client_id' => 'Top Cluck For Hsu WenI',
+                'redirect_uri' => $redirectUri,
+                'scope' => 'eggs-count profile'
+            ));
+
+        return $this->redirect($url);
     }
 
     /**
@@ -41,6 +54,37 @@ class CoopOAuthController extends BaseController
     {
         // equivalent to $_GET['code']
         $code = $request->get('code');
+
+        $redirectUri = $this->generateUrl(
+            'coop_authorize_redirect',
+            array(),
+            true
+        );
+
+        $http = new Client('http://coop.apps.knpuniversity.com', array(
+            'request.options' => array(
+                'exceptions' => false,
+            )
+        ));
+
+        $request = $http->post('/token', null, array(
+            'client_id' => 'Top Cluck For Hsu WenI',
+            'client_secret' => '508edfa372cf2aff0893fd77983c5afd',
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => $redirectUri,
+        ));
+        $response = $request->send();
+        $responseBody = $response->getBody(true);
+        $responseArr = json_decode($responseBody, true);
+        $accessToken = $responseArr['access_token'];
+        $expiresIn = $responseArr['expires_in'];
+
+        $request = $http->get('/api/me');
+        $request->addHeader('Authorization', 'Bearer ' . $accessToken);
+        $response = $request->send();
+
+        echo $response->getBody(); die;
 
         die('Implement this in CoopOAuthController::receiveAuthorizationCode');
     }
